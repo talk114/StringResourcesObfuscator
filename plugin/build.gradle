@@ -1,0 +1,35 @@
+apply plugin: 'groovy'
+apply plugin: 'maven'
+
+dependencies {
+    compile gradleApi()
+    compile 'org.codehaus.groovy:groovy-all:2.4.3'
+}
+
+repositories {
+    mavenCentral()
+}
+
+task sourcesJar(type: Jar, dependsOn: classes) {
+    classifier = 'sources'
+    from sourceSets.main.allSource
+}
+
+artifacts {
+    archives sourcesJar
+}
+
+group = 'com.github.oliverjonas.stringresourcesobfuscator'
+version = '1.0'
+sourceCompatibility = 1.6
+targetCompatibility = 1.6
+
+uploadArchives {
+    repositories {
+        mavenDeployer {
+            repository(id: 'StringResourcesObfuscator', url: 'https://api.bintray.com/content/oliverjonas/maven/StringResourcesObfuscator/' + version + '/') {
+                authentication(userName: project.property("bintrayUser"), password: project.property("bintrayKey"))
+            }
+        }
+    }
+}
