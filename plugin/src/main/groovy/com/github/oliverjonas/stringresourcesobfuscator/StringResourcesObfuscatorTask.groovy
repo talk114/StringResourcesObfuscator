@@ -71,6 +71,16 @@ class StringResourcesObfuscatorTask extends DefaultTask {
             }
         }
 
+        // Ensure that at least 250 strings are generated so that string resources are pushed into string blocks
+        // (required for unobfuscation)
+        def root = doc.getDocumentElement()
+        (1..250).each {
+            def el = doc.createElement("string")
+            el.setAttribute("name", "\$${it}")
+            el.appendChild(doc.createTextNode("\u07FF${it}"))
+            root.appendChild(el)
+        }
+
         def transformerFactory = TransformerFactory.newInstance()
         def transformer = transformerFactory.newTransformer()
         def domSource = new DOMSource(doc)
