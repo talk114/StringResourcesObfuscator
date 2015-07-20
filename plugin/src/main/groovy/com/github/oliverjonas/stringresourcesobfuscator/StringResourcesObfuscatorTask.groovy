@@ -91,7 +91,7 @@ class StringResourcesObfuscatorTask extends DefaultTask {
     def obfuscateElement(Element el) {
 
         if (el.getAttributeNS(TOOLS_NAMESPACE, "obfuscate") == "false") {
-            el.removeAttributeNS(TOOLS_NAMESPACE, "obfuscate");
+            el.getParentNode().removeChild(el);
         } else {
             def prefix = "\u07FF\u07FF\u07FF"
             def traversal = el.getOwnerDocument()
