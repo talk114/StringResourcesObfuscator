@@ -72,7 +72,7 @@ class StringResourcesObfuscatorTask extends DefaultTask {
                     def attr = list.item(n)
                     def value = attr.getValue()
                     if (value != null && value.startsWith("@string/")) {
-                        excludedStrings.add(value)
+                        excludedStrings.add(value as String)
                     }
                 }
             }
@@ -81,7 +81,7 @@ class StringResourcesObfuscatorTask extends DefaultTask {
         return excludedStrings
     }
 
-    def processFile(File source, File target, Set<String> excludedStrings) {
+    def processFile(File source, File target, excludedStrings) {
 
         target.getParentFile().mkdirs()
 
@@ -90,21 +90,21 @@ class StringResourcesObfuscatorTask extends DefaultTask {
         def docBuilder = docFactory.newDocumentBuilder()
         def doc = docBuilder.parse(source)
 
-        doc.getElementsByTagName("string").each { string ->
+        getElements(doc, "string").each { string ->
             if (!excludedStrings.contains("@string/" + string.getAttribute("name"))) {
-                obfuscateElement(string as Element)
+                obfuscateElement(string)
             } else {
                 string.getParentNode().removeChild(string)
             }
         }
 
-        doc.getElementsByTagName("string-array").each { stringArray ->
+        getElements(doc, "string-array").each { stringArray ->
             stringArray.getElementsByTagName("item").each { item ->
                 obfuscateElement(item)
             }
         }
 
-        doc.getElementsByTagName("plurals").each { stringArray ->
+        getElements(doc, "plurals").each { stringArray ->
             stringArray.getElementsByTagName("item").each { item ->
                 obfuscateElement(item)
             }
@@ -127,7 +127,17 @@ class StringResourcesObfuscatorTask extends DefaultTask {
         transformer.transform(domSource, result)
     }
 
-    def obfuscateElement(Element el) {
+    def static getElements(doc, name) {
+
+        def elements = new ArrayList<Element>()
+        doc.getElementsByTagName(name).each { el ->
+            elements.add(el as Element)
+        }
+
+        return elements;
+    }
+
+    def obfuscateElement(el) {
 
         if (el.getAttributeNS(TOOLS_NAMESPACE, "obfuscate") == "false") {
             el.getParentNode().removeChild(el)
@@ -144,7 +154,7 @@ class StringResourcesObfuscatorTask extends DefaultTask {
         }
     }
 
-    def String obfuscate(String string) {
+    def String obfuscate(string) {
 
         quoting = false
         skipping = false
@@ -153,10 +163,7 @@ class StringResourcesObfuscatorTask extends DefaultTask {
         for (int n = 0; n < string.length(); n++) {
             def c = string.charAt(n) as int
             if (acceptChar(c)) {
-                c += random.nextInt(MAX)
-                while (c > MAX) {
-                    c -= MAX
-                }
+                c ^= random.nextInt(MAX)
                 if (c <= ' ' || c == '\\' || c == '\'' || c == '"' || c == '%') {
                     c = '\u07FF' as char
                     n--
@@ -168,7 +175,7 @@ class StringResourcesObfuscatorTask extends DefaultTask {
         return b.toString()
     }
 
-    def boolean acceptChar(int c) {
+    def boolean acceptChar(c) {
 
         if (c <= ' ' || c == '\\' || c == '\'' || c == '"' || skipping) {
             if (c == '"') quoting = !quoting
